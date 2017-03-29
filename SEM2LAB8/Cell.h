@@ -1,13 +1,13 @@
 #pragma once
-#include <windef.h>
+#include <windows.h>
 
 class Cell
 {
 public:
 	Cell(int ,int,int,int,int);
 	Cell(RECT& cellRect,int);
-	int getNumber();
-	RECT getRect();
+	int getNumber() const;
+	RECT getRect() const;
 private:
 	RECT _cellRect;
 	int _orderNumber;

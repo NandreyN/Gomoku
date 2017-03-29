@@ -1,13 +1,13 @@
 #include <windows.h>
 #include <string>
 #undef UNICODE
+#include "Field.h"
 using namespace std;
 
 BOOL InitApplication(HINSTANCE hinstance);
 BOOL InitInstance(HINSTANCE hinstance, int nCMdShow);
 LRESULT CALLBACK WndProc(HWND hwnd, UINT messagem, WPARAM wparam, LPARAM lparam);
 
-void PrepareBackground(HDC &hdc, int x, int y);
 void DrawCircle(HDC &hdc, RECT& square);
 void DrawCross(HDC &hdc, RECT& square);
 
@@ -34,6 +34,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR lpCmdLine,
 }
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
+	static Field field;
+
 	static HDC hdc;
 	static int x, y;
 	PAINTSTRUCT ps;
@@ -41,6 +43,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 	switch (message)
 	{
 	case WM_CREATE:
+		RECT clientArea;
+		GetClientRect(hwnd, &clientArea);
+		field = Field(clientArea.right, clientArea.bottom, cellNumber);
 		break;
 	case  WM_SIZE:
 	{
@@ -53,7 +58,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 	case WM_PAINT:
 	{
 		hdc = BeginPaint(hwnd, &ps);
-		PrepareBackground(hdc, x, y);
+		field.prepareBackground(hdc);
 		EndPaint(hwnd, &ps);
 	}
 		break;
@@ -67,25 +72,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 		return DefWindowProc(hwnd, message, wparam, lparam);
 	}
 	return FALSE;
-}
-
-void PrepareBackground(HDC& hdc, int x, int y)
-{
-	HPEN pen = CreatePen(PS_SOLID, 3, BLACK_PEN);
-	HPEN old = (HPEN)SelectObject(hdc, pen);
-
-	for (int i = 0; i <= x; i += (double)x / cellNumber)
-	{
-		MoveToEx(hdc, i, 0, NULL);
-		LineTo(hdc, i, y);
-	}
-	for (int j = 0; j < +y; j += (double)y / cellNumber)
-	{
-		MoveToEx(hdc, 0, j, NULL);
-		LineTo(hdc, x, j);
-	}
-	SelectObject(hdc, old);
-	DeleteObject(pen);
 }
 
 BOOL InitApplication(HINSTANCE hinstance)
@@ -116,7 +102,7 @@ BOOL InitInstance(HINSTANCE hinstance, int nCMdShow)
 	procHWND = CreateWindow(
 		"Gomoku",
 		"Gomoku",
-		WS_OVERLAPPEDWINDOW,
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
 		0,
 		0,
 		700,
