@@ -7,11 +7,7 @@ using namespace std;
 BOOL InitApplication(HINSTANCE hinstance);
 BOOL InitInstance(HINSTANCE hinstance, int nCMdShow);
 LRESULT CALLBACK WndProc(HWND hwnd, UINT messagem, WPARAM wparam, LPARAM lparam);
-
-void DrawCircle(HDC &hdc, RECT& square);
-void DrawCross(HDC &hdc, RECT& square);
-
-static unsigned int cellNumber = 3;
+static unsigned int cellNumber = 4;
 static HWND procHWND;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -35,7 +31,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR lpCmdLine,
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	static Field field;
-
+	static bool xLast, finished;
 	static HDC hdc;
 	static int x, y;
 	PAINTSTRUCT ps;
@@ -43,9 +39,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 	switch (message)
 	{
 	case WM_CREATE:
-		RECT clientArea;
-		GetClientRect(hwnd, &clientArea);
-		field = Field(clientArea.right, clientArea.bottom, cellNumber);
+		xLast = false;
+		finished = false;
+		RECT c;
+		GetClientRect(hwnd, &c);
+		field = Field(c.right, c.bottom, cellNumber);
 		break;
 	case  WM_SIZE:
 	{
@@ -61,7 +59,39 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 		field.prepareBackground(hdc);
 		EndPaint(hwnd, &ps);
 	}
+	break;
+
+	case WM_LBUTTONUP:
+		if (xLast || finished) return TRUE;
+		hdc = GetDC(hwnd);
+		field.putMark(hdc, LOWORD(lparam), HIWORD(lparam), 'x');
+		ReleaseDC(hwnd, hdc);
+		xLast = true;
+
+		char winner; winner = field.checkWinner();
+		if (winner != '\0')
+		{
+			string s(1, winner);
+			MessageBox(NULL, s.data(), s.data(), MB_OK);
+			finished = true;
+		}
 		break;
+	case WM_RBUTTONUP:
+		if (!xLast || finished) return TRUE;
+		hdc = GetDC(hwnd);
+		field.putMark(hdc, LOWORD(lparam), HIWORD(lparam), 'o');
+		ReleaseDC(hwnd, hdc);
+		xLast = false;
+
+		char w;w = field.checkWinner();
+		if (w != '\0')
+		{
+			string s(1,w);
+			MessageBox(NULL,s.data(), s.data(),  MB_OK);
+			finished = true;
+		}
+		break;
+
 	case  WM_CLOSE:
 		DestroyWindow(hwnd);
 		break;
